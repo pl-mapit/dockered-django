@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    env_file:
+      - "./enviroment/db.env"
+    volumes:
+      - 'django_db:/var/lib/postgresql'
+    ports:
+      - '5432:5432'
+
+
+  start-project:
+    build:
+      context: .
+      dockerfile: dockerfiles/django-creator.dockerfile
+    volumes:
+      - .:/app
+    command: ["django-admin", "startproject", "${APP_NAME}"]
+
+
+  django:
+    build: 
+      context: .
+      dockerfile: ./dockerfiles/django-devel.dockerfile
+      args:
+        APP_NAME: ${APP_NAME}
+    env_file:
+      - "./enviroment/db.env"
+      - "./enviroment/base.env"
+    volumes:
+      - ./${APP_NAME}:/${APP_NAME}
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+
+
+  django-admin:
+    build: 
+      context: .
+      dockerfile: ./dockerfiles/django-devel.dockerfile
+      args:
+        APP_NAME: ${APP_NAME}
+    env_file:
+      - "./enviroment/db.env"
+    volumes:
+      - ./${APP_NAME}:/${APP_NAME}
+
+    entrypoint: ["python", "manage.py"]
+    depends_on:
+      - db
+
+volumes:
+  django_db:
